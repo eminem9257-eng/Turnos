@@ -1,2 +1,1109 @@
-# Turnos
-reserva de turnos
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Turnos - Complejo Deportivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para íconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- HEADER -->
+    <header class="bg-slate-800 border-b border-slate-700 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🦎</span>
+                <h1 id="titulo-complejo" class="text-xl font-bold tracking-wide text-white">Complejo Deportivo La Iguana Canchas</h1>
+            </div>
+            <nav class="flex space-x-2">
+                <button onclick="cambiarVista('cliente')" id="btn-vista-cliente" class="px-4 py-2 rounded-lg font-medium bg-emerald-600 text-white transition shadow-sm">Reservar Turno</button>
+                <button onclick="abrirModalAdmin()" id="btn-vista-admin" class="px-4 py-2 rounded-lg font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition flex items-center gap-2">
+                    <i class="fas fa-lock text-amber-400"></i> Panel Admin
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MODAL DE CONTRASEÑA ADMIN -->
+    <div id="modal-password-admin" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-700 text-slate-100">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                        <i class="fas fa-user-shield text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Acceso Administrador</h3>
+                        <p class="text-xs text-slate-400">Ingrese la clave de acceso</p>
+                    </div>
+                </div>
+                <button onclick="cerrarModalAdmin()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="validarPasswordAdmin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
+                    <input type="password" id="input-password-admin" placeholder="••••••••" required 
+                        class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div id="msg-error-admin" class="hidden p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs rounded-xl flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2 text-rose-400"></i>
+                    <span>Contraseña incorrecta. Intente nuevamente.</span>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="cerrarModalAdmin()" 
+                        class="w-1/2 py-2.5 px-4 rounded-xl border border-slate-700 text-slate-300 text-sm font-semibold hover:bg-slate-700 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                        class="w-1/2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-md transition">
+                        Ingresar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6">
+
+        <!-- VISTA CLIENTE -->
+        <section id="vista-cliente" class="space-y-6">
+            <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <h2 class="text-2xl font-semibold text-emerald-400">Reserva tu Cancha Online</h2>
+                    <span id="badge-sync-status" class="text-xs px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-slate-500"></span> Conectando con Google Sheets...
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">1. Seleccioná Cancha</label>
+                        <select id="select-cancha" onchange="actualizarHorariosDisponibles()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500">
+                            <option value="">Cargando canchas...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">2. Fecha (Máx. 5 días)</label>
+                        <input type="date" id="input-fecha" onchange="actualizarHorariosDisponibles()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">3. Horario Disponible</label>
+                        <select id="select-horario" onchange="mostrarDetallePrecio()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500">
+                            <option value="">Seleccioná cancha y fecha...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="detalle-turno" class="hidden bg-slate-900/60 border border-emerald-500/30 p-4 rounded-xl mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <p class="text-sm text-slate-400">Duración del turno: <span id="lbl-duracion" class="font-bold text-white"></span></p>
+                        <p class="text-sm text-slate-400">Banda Horaria: <span id="lbl-banda" class="font-bold text-emerald-400"></span></p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Total a abonar</span>
+                        <span id="lbl-precio" class="text-3xl font-black text-emerald-400">$0</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-700 pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Nombre y Apellido</label>
+                        <input type="text" id="cliente-nombre" placeholder="Ej. Juan Pérez" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Teléfono / WhatsApp</label>
+                        <input type="tel" id="cliente-telefono" placeholder="Ej. 3434567890" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <button onclick="realizarReservaWhatsApp()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-6 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+                    <i class="fab fa-whatsapp text-xl"></i>
+                    <span>Solicitar Reserva por WhatsApp</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- VISTA ADMINISTRADOR -->
+        <section id="vista-admin" class="hidden space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 class="text-2xl font-semibold text-emerald-400 flex items-center gap-2">
+                    <i class="fas fa-sliders-h"></i> Panel Administrador
+                </h2>
+                <button onclick="salirAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-sm transition">
+                    Cerrar Sesión 🔓
+                </button>
+            </div>
+
+            <!-- CONFIGURACIÓN GOOGLE SHEETS -->
+            <div class="bg-slate-800 border border-emerald-500/40 p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="flex items-center gap-3 border-b border-slate-700 pb-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Base de Datos Nube (Google Sheets)</h3>
+                        <p class="text-xs text-slate-400">Guardado permanente en la nube para precios, canchas y reservas</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">URL de la Web App de Google Apps Script:</label>
+                        <input type="url" id="input-sheets-url" https://script.google.com/macros/s/AKfycbw0vVXhNc5ALgfd6EK2ycSAlQcLKL_LRicjnSKWq40cyx2rbrRdfdKaTjncJsSamiDURw/exec$0placeholder="" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 text-sm font-mono">
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="guardarUrlGoogleSheets()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
+                            <i class="fas fa-save"></i> Guardar Enlace Nube
+                        </button>
+                        <button onclick="sincronizarConGoogleSheets()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded-xl transition text-sm flex items-center gap-2">
+                            <i class="fas fa-sync-alt"></i> Forzar Sincronización
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestión de Reservas por Pestañas -->
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-check text-emerald-400"></i> Gestión de Reservas
+                </h3>
+
+                <!-- Pestañas -->
+                <div class="flex border-b border-slate-700 gap-2">
+                    <button id="tab-reserva-pendiente" onclick="filtrarReservasAdmin('pendiente')" class="px-4 py-2 font-bold bg-amber-500 text-slate-950 rounded-t-lg transition flex items-center gap-2">
+                        <span>⏳ Pendientes</span>
+                        <span id="cnt-pendientes" class="bg-slate-900/40 text-slate-900 text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button id="tab-reserva-confirmada" onclick="filtrarReservasAdmin('confirmada')" class="px-4 py-2 text-slate-300 hover:text-white rounded-t-lg transition flex items-center gap-2">
+                        <span>✅ Confirmadas</span>
+                        <span id="cnt-confirmadas" class="bg-slate-900/40 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button id="tab-reserva-completada" onclick="filtrarReservasAdmin('completada')" class="px-4 py-2 text-slate-300 hover:text-white rounded-t-lg transition flex items-center gap-2">
+                        <span>🏁 Completadas</span>
+                        <span id="cnt-completadas" class="bg-slate-900/40 text-slate-300 text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                </div>
+
+                <!-- Lista de Reservas -->
+                <div id="contenedor-reservas-admin" class="space-y-3 pt-2">
+                    <!-- Se carga dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Configuración General del Complejo y Canchas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Ajustes Básicos -->
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                    <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">⚙️ Datos del Complejo</h3>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-1">Nombre del Complejo</label>
+                        <input type="text" id="admin-nombre-complejo" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-1">Teléfono / WhatsApp Admin</label>
+                        <input type="text" id="admin-whatsapp" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-1">Contraseña del Panel Admin</label>
+                        <input type="password" id="admin-nueva-password" placeholder="Nueva contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white">
+                    </div>
+                    <button onclick="guardarConfiguracionGeneral()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl transition w-full">
+                        💾 Guardar Ajustes Generales en Nube
+                    </button>
+                </div>
+
+                <!-- Lista y Alta de Canchas -->
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                    <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🎾 Canchas Habilitadas</h3>
+                    <div id="lista-canchas-admin" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div>
+                    <div class="border-t border-slate-700 pt-3 space-y-2">
+                        <h4 class="text-xs uppercase tracking-wider text-slate-400 font-bold">Agregar Nueva Cancha</h4>
+                        <input type="text" id="nueva-cancha-nombre" placeholder="Nombre (Ej. Cancha Pádel Sintético)" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                        <select id="nueva-cancha-deporte" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-sm text-white">
+                            <option value="padel">Pádel (90 min)</option>
+                            <option value="futbol5">Fútbol 5 (60 min)</option>
+                        </select>
+                        <button onclick="agregarCancha()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-xl text-sm transition">➕ Agregar Cancha</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Horarios por Cancha y por Día -->
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-700 pb-2 gap-2">
+                    <h3 class="font-bold text-white">📅 Horarios por Cancha y Día</h3>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">Seleccionar Cancha a configurar:</label>
+                    <select id="select-admin-cancha-horario" onchange="cargarHorariosCanchaAdmin()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white mb-4">
+                    </select>
+                </div>
+                <div id="contenedor-horarios-por-cancha" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4"></div>
+                <button onclick="guardarHorariosCancha()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition">💾 Guardar Horarios en la Nube</button>
+            </div>
+
+            <!-- Tarifas Separadas por Cancha -->
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl space-y-4">
+                <h3 class="font-bold text-white border-b border-slate-700 pb-2">💲 Tarifas Individuales por Cancha</h3>
+                <div>
+                    <label class="block text-sm text-slate-300 mb-1">Seleccionar Cancha para actualizar precio:</label>
+                    <select id="select-admin-cancha-tarifa" onchange="cargarTarifasCanchaAdmin()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white mb-4">
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-1">Precio Diurno (08:00 a 18:00 hs)</label>
+                        <input type="number" id="tarifa-diurno" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-300 mb-1">Precio Nocturno (Después de 18:00 hs)</label>
+                        <input type="number" id="tarifa-nocturno" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white">
+                    </div>
+                </div>
+                <button onclick="guardarTarifasCancha()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition">💾 Guardar Precios Permanentes en Nube</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-800 border-t border-slate-700 py-4 text-center text-xs text-slate-400">
+        <p id="footer-complejo">Complejo Deportivo — Sistema de Reservas Online</p>
+    </footer>
+
+    <!-- LÓGICA DE LA APLICACIÓN -->
+    <script>
+        // URL por defecto para sincronización en cualquier dispositivo
+        const DEFAULT_SHEETS_URL = "https://script.google.com/macros/s/AKfycbw0vVXhNc5ALgfd6EK2ycSAlQcLKL_LRicjnSKWq40cyx2rbrRdfdKaTjncJsSamiDURw/exec"; 
+
+        let configApp = JSON.parse(localStorage.getItem('configApp')) || {
+            nombre: "Complejo Deportivo La Iguana Canchas",
+            whatsapp: "5493435713014",
+            sheetsUrl: DEFAULT_SHEETS_URL,
+            passwordAdmin: "Libertador2025"
+        };
+
+        // Forzar siempre la URL de Google Sheets si está vacía o es diferente a la predeterminada
+        if (!configApp.sheetsUrl || configApp.sheetsUrl.includes('AKfycb...')) {
+            configApp.sheetsUrl = DEFAULT_SHEETS_URL;
+        }
+
+        let canchas = JSON.parse(localStorage.getItem('canchas')) || [
+            { 
+                id: 'Futbol N5', 
+                nombre: 'Cancha de Futbol 5', 
+                deporte: 'futbol5', 
+                duracion: 60,
+                tarifas: { diurno: 25000, nocturno: 30000 },
+                horarios: {
+                    1: { nombre: 'Lunes', inicio: '08:00', fin: '00:00' },
+                    2: { nombre: 'Martes', inicio: '08:00', fin: '00:00' },
+                    3: { nombre: 'Miércoles', inicio: '08:00', fin: '00:00' },
+                    4: { nombre: 'Jueves', inicio: '08:00', fin: '00:00' },
+                    5: { nombre: 'Viernes', inicio: '08:00', fin: '18:00' },
+                    6: { nombre: 'Sábado', inicio: '18:00', fin: '00:00' },
+                    0: { nombre: 'Domingo', inicio: '08:00', fin: '00:00' }
+                }
+            },
+            { 
+                id: 'padel_cemento', 
+                nombre: 'Cancha de Pádel Cemento', 
+                deporte: 'padel', 
+                duracion: 90,
+                tarifas: { diurno: 16000, nocturno: 20000 },
+                horarios: {
+                    1: { nombre: 'Lunes', inicio: '08:00', fin: '00:00' },
+                    2: { nombre: 'Martes', inicio: '08:00', fin: '00:00' },
+                    3: { nombre: 'Miércoles', inicio: '08:00', fin: '00:00' },
+                    4: { nombre: 'Jueves', inicio: '08:00', fin: '00:00' },
+                    5: { nombre: 'Viernes', inicio: '08:00', fin: '18:00' },
+                    6: { nombre: 'Sábado', inicio: '18:00', fin: '00:00' },
+                    0: { nombre: 'Domingo', inicio: '08:00', fin: '00:00' }
+                }
+            }
+        ];
+
+        let reservasRealizadas = JSON.parse(localStorage.getItem('reservasRealizadas')) || [];
+        let estadoFiltroAdmin = 'pendiente';
+
+        function guardarEnLocalStorage() {
+            localStorage.setItem('configApp', JSON.stringify(configApp));
+            localStorage.setItem('canchas', JSON.stringify(canchas));
+            localStorage.setItem('reservasRealizadas', JSON.stringify(reservasRealizadas));
+        }
+
+        function horaAMinutos(hStr) {
+            if (hStr === '00:00' || hStr === '24:00') return 24 * 60;
+            const [h, m] = hStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        // Formatea números de teléfono para el link de WhatsApp
+        function formatearTelefonoWhatsApp(tel) {
+            let num = String(tel).replace(/\D/g, ''); // Quita cualquier caracter no numérico
+            if (num.startsWith('0')) num = num.substring(1); // Remueve 0 inicial si existe
+            if (num.startsWith('15')) num = num.substring(2); // Remueve 15 si es celular local sin prefijo
+            if (!num.startsWith('54')) {
+                num = '549' + num;
+            } else if (num.startsWith('54') && !num.startsWith('549')) {
+                num = '549' + num.substring(2);
+            }
+            return num;
+        }
+
+        // Sincronización completa con Google Sheets (Lectura de Precios, Canchas y Reservas)
+        async function sincronizarConGoogleSheets() {
+            const badge = document.getElementById('badge-sync-status');
+            if (!configApp.sheetsUrl) {
+                if (badge) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span> Google Sheets no configurado`;
+                }
+                return;
+            }
+
+            try {
+                if (badge) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span> Sincronizando datos...`;
+                }
+
+                const resp = await fetch(configApp.sheetsUrl);
+                if (resp.ok) {
+                    const datos = await resp.json();
+                    
+                    // 1. Cargar Configuración Global y Precios de Canchas si existen en la Nube
+                    if (datos.config) {
+                        if (datos.config.canchas && Array.isArray(datos.config.canchas)) {
+                            canchas = datos.config.canchas;
+                        }
+                        if (datos.config.configApp) {
+                            configApp.nombre = datos.config.configApp.nombre || configApp.nombre;
+                            configApp.whatsapp = datos.config.configApp.whatsapp || configApp.whatsapp;
+                            configApp.passwordAdmin = datos.config.configApp.passwordAdmin || configApp.passwordAdmin;
+                        }
+                    }
+
+                    // 2. Cargar Lista de Reservas
+                    if (datos.reservas && Array.isArray(datos.reservas)) {
+                        reservasRealizadas = datos.reservas.map(item => ({
+                            id: item.id || 'res_' + Math.random().toString(36).substr(2, 9),
+                            canchaId: item.canchaid || canchas.find(c => c.nombre === item.canchanombre)?.id || 'padel_cemento',
+                            canchaNombre: item.canchanombre || 'Cancha',
+                            fecha: item.fecha,
+                            hora: item.hora,
+                            nombre: item.nombre,
+                            telefono: item.telefono,
+                            precio: parseFloat(item.precio) || 0,
+                            estado: item.estado || 'pendiente'
+                        }));
+                    }
+                    
+                    guardarEnLocalStorage();
+                    actualizarInterfazConfig();
+                    cargarCanchasSelect();
+                    
+                    if (document.getElementById('vista-admin') && !document.getElementById('vista-admin').classList.contains('hidden')) {
+                        renderizarListaReservasAdmin();
+                    }
+
+                    if (badge) {
+                        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Sincronizado en tiempo real`;
+                    }
+                }
+            } catch (err) {
+                console.warn("Modo local o sin conexión con la planilla:", err);
+                if (badge) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Datos cargados localmente`;
+                }
+            }
+        }
+
+        async function actualizarEstadoEnGoogleSheets(idReserva, nuevoEstado) {
+            if (!configApp.sheetsUrl) return;
+            try {
+                await fetch(configApp.sheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update_status',
+                        id: idReserva,
+                        estado: nuevoEstado
+                    })
+                });
+            } catch (e) {
+                console.error("Error actualizando estado en Google Sheets:", e);
+            }
+        }
+
+        async function guardarConfiguracionEnNube() {
+            if (!configApp.sheetsUrl) return;
+            try {
+                const payloadConfig = {
+                    action: 'save_config',
+                    payload: {
+                        configApp: configApp,
+                        canchas: canchas
+                    }
+                };
+                await fetch(configApp.sheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadConfig)
+                });
+            } catch (e) {
+                console.error("Error guardando configuración en Google Sheets:", e);
+            }
+        }
+
+        async function enviarReservaAGoogleSheets(reserva) {
+            if (!configApp.sheetsUrl) return;
+            try {
+                await fetch(configApp.sheetsUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reserva)
+                });
+            } catch (e) {
+                console.error("Error enviando reserva:", e);
+            }
+        }
+
+        window.guardarUrlGoogleSheets = async function() {
+            const url = document.getElementById('input-sheets-url').value.trim();
+            if (!url) {
+                alert("Por favor ingrese una URL válida de Google Apps Script.");
+                return;
+            }
+            
+            configApp.sheetsUrl = url;
+            guardarEnLocalStorage();
+
+            // Muestra indicador visual inmediato en el badge
+            const badge = document.getElementById('badge-sync-status');
+            if (badge) {
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-400 animate-ping"></span> Guardando y probando conexión...`;
+            }
+
+            try {
+                // Sincroniza inmediatamente y guarda la configuración general en la nube
+                await sincronizarConGoogleSheets();
+                await guardarConfiguracionEnNube();
+                
+                if (badge) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Conectado exitosamente con Google Sheets`;
+                }
+                alert("✅ ¡Enlace guardado y verificado con éxito! Tu base de datos en la nube está activa.");
+            } catch (err) {
+                console.error("Error al conectar:", err);
+                if (badge) {
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400"></span> Guardado localmente. Verifique permisos de la URL`;
+                }
+                alert("El enlace se guardó localmente. Si no sincroniza, asegúrese de haber seleccionado 'Cualquier persona' (Anyone) en los permisos de Google Apps Script.");
+            }
+        };
+
+        window.abrirModalAdmin = function() {
+            document.getElementById('modal-password-admin').classList.remove('hidden');
+            document.getElementById('input-password-admin').value = '';
+            document.getElementById('msg-error-admin').classList.add('hidden');
+        };
+
+        window.cerrarModalAdmin = function() {
+            document.getElementById('modal-password-admin').classList.add('hidden');
+        };
+
+        window.validarPasswordAdmin = function(e) {
+            e.preventDefault();
+            const inputPwd = document.getElementById('input-password-admin').value;
+            const pwdCorrecta = configApp.passwordAdmin || "Libertador2025";
+            if (inputPwd === pwdCorrecta) {
+                cerrarModalAdmin();
+                cambiarVista('admin');
+            } else {
+                document.getElementById('msg-error-admin').classList.remove('hidden');
+            }
+        };
+
+        window.salirAdmin = function() {
+            cambiarVista('cliente');
+        };
+
+        function cambiarVista(vista) {
+            const vistaCliente = document.getElementById('vista-cliente');
+            const vistaAdmin = document.getElementById('vista-admin');
+            const btnCliente = document.getElementById('btn-vista-cliente');
+            const btnAdmin = document.getElementById('btn-vista-admin');
+
+            if (vista === 'admin') {
+                vistaCliente.classList.add('hidden');
+                vistaAdmin.classList.remove('hidden');
+                btnCliente.className = "px-4 py-2 rounded-lg font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition";
+                btnAdmin.className = "px-4 py-2 rounded-lg font-medium bg-emerald-600 text-white transition shadow-sm flex items-center gap-2";
+                cargarPanelAdmin();
+            } else {
+                vistaAdmin.classList.add('hidden');
+                vistaCliente.classList.remove('hidden');
+                btnAdmin.className = "px-4 py-2 rounded-lg font-medium bg-slate-700 text-slate-300 hover:bg-slate-600 transition flex items-center gap-2";
+                btnCliente.className = "px-4 py-2 rounded-lg font-medium bg-emerald-600 text-white transition shadow-sm";
+            }
+        }
+
+        window.cargarCanchasSelect = function() {
+            const select = document.getElementById('select-cancha');
+            if (!select) return;
+            const valorPrevio = select.value;
+            select.innerHTML = '<option value="">Seleccioná una cancha...</option>';
+            
+            canchas.forEach(c => {
+                let opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.nombre} (${c.deporte === 'padel' ? 'Pádel - 90 min' : 'Fútbol 5 - 60 min'})`;
+                select.appendChild(opt);
+            });
+
+            if (valorPrevio && canchas.some(c => c.id === valorPrevio)) {
+                select.value = valorPrevio;
+            }
+
+            actualizarHorariosDisponibles();
+        };
+
+        window.actualizarHorariosDisponibles = function() {
+            const selectCanchaId = document.getElementById('select-cancha')?.value;
+            const fechaSel = document.getElementById('input-fecha')?.value;
+            const selectHorario = document.getElementById('select-horario');
+            
+            if (!selectHorario) return;
+            selectHorario.innerHTML = '<option value="">Seleccioná un horario...</option>';
+            document.getElementById('detalle-turno')?.classList.add('hidden');
+
+            if (!selectCanchaId || !fechaSel) return;
+
+            const cancha = canchas.find(c => c.id === selectCanchaId);
+            if (!cancha) return;
+
+            const partesFecha = fechaSel.split('-');
+            const fechaObj = new Date(parseInt(partesFecha[0]), parseInt(partesFecha[1]) - 1, parseInt(partesFecha[2]));
+            const diaSemanaNum = fechaObj.getDay(); 
+            
+            const configDia = cancha.horarios[diaSemanaNum];
+            if (!configDia) return;
+
+            let horaActualMinutos = horaAMinutos(configDia.inicio);
+            let horaFinMinutos = horaAMinutos(configDia.fin);
+
+            const ahora = new Date();
+            const yyyy = ahora.getFullYear();
+            const mm = String(ahora.getMonth() + 1).padStart(2, '0');
+            const dd = String(ahora.getDate()).padStart(2, '0');
+            const hoyStr = `${yyyy}-${mm}-${dd}`;
+
+            const esHoy = fechaSel === hoyStr;
+            const minutosActualesDia = ahora.getHours() * 60 + ahora.getMinutes();
+
+            let opcionesContador = 0;
+
+            while (horaActualMinutos + cancha.duracion <= horaFinMinutos) {
+                let hInicio = Math.floor(horaActualMinutos / 60);
+                let mInicio = horaActualMinutos % 60;
+                let hStr = String(hInicio).padStart(2, '0') + ':' + String(mInicio).padStart(2, '0');
+
+                let esValidoPorTiempo = true;
+                if (esHoy && horaActualMinutos < minutosActualesDia + 30) {
+                    esValidoPorTiempo = false;
+                }
+
+                // SOLAMENTE BLOQUEA SI LA RESERVA ESTÁ PENDIENTE, CONFIRMADA O COMPLETADA (LIBERA SI FUE CANCELADA)
+                let yaReservado = reservasRealizadas.some(r => 
+                    (r.canchaId === selectCanchaId || r.canchaNombre === cancha.nombre) && 
+                    r.fecha === fechaSel && 
+                    r.hora === hStr && 
+                    (r.estado === 'pendiente' || r.estado === 'confirmada' || r.estado === 'completada')
+                );
+
+                if (esValidoPorTiempo && !yaReservado) {
+                    let opt = document.createElement('option');
+                    opt.value = hStr;
+                    opt.textContent = `${hStr} hs (Turno de ${cancha.duracion} min)`;
+                    selectHorario.appendChild(opt);
+                    opcionesContador++;
+                }
+
+                horaActualMinutos += cancha.duracion;
+            }
+
+            if (cancha.deporte === 'padel' && (configDia.fin === '00:00' || configDia.fin === '24:00')) {
+                let turno2230Min = 22 * 60 + 30;
+                let hStr = '22:30';
+                let yaExisteEnSelect = Array.from(selectHorario.options).some(o => o.value === hStr);
+
+                if (!yaExisteEnSelect) {
+                    let esValidoPorTiempo = true;
+                    if (esHoy && turno2230Min < minutosActualesDia + 30) {
+                        esValidoPorTiempo = false;
+                    }
+
+                    let yaReservado = reservasRealizadas.some(r => 
+                        (r.canchaId === selectCanchaId || r.canchaNombre === cancha.nombre) && 
+                        r.fecha === fechaSel && 
+                        r.hora === hStr && 
+                        (r.estado === 'pendiente' || r.estado === 'confirmada' || r.estado === 'completada')
+                    );
+
+                    if (esValidoPorTiempo && !yaReservado) {
+                        let opt = document.createElement('option');
+                        opt.value = hStr;
+                        opt.textContent = `${hStr} hs (Turno de 90 min hasta las 00:00 hs)`;
+                        selectHorario.appendChild(opt);
+                        opcionesContador++;
+                    }
+                }
+            }
+
+            if (opcionesContador === 0) {
+                selectHorario.innerHTML = '<option value="">No hay turnos disponibles para esta fecha</option>';
+            }
+        };
+
+        window.mostrarDetallePrecio = function() {
+            const selectCanchaId = document.getElementById('select-cancha').value;
+            const horario = document.getElementById('select-horario').value;
+            const detalleDiv = document.getElementById('detalle-turno');
+
+            if (!horario) {
+                detalleDiv.classList.add('hidden');
+                return;
+            }
+
+            const cancha = canchas.find(c => c.id === selectCanchaId);
+            const horaNum = parseInt(horario.split(':')[0]);
+            let esNocturno = horaNum >= 18;
+            
+            let precio = esNocturno ? cancha.tarifas.nocturno : cancha.tarifas.diurno;
+
+            document.getElementById('lbl-duracion').textContent = `${cancha.duracion} minutos`;
+            document.getElementById('lbl-banda').textContent = esNocturno ? "Banda Nocturna" : "Banda Diurna";
+            document.getElementById('lbl-precio').textContent = `$${precio.toLocaleString('es-AR')}`;
+            detalleDiv.classList.remove('hidden');
+        };
+
+        window.realizarReservaWhatsApp = async function() {
+            const canchaId = document.getElementById('select-cancha').value;
+            const fecha = document.getElementById('input-fecha').value;
+            const hora = document.getElementById('select-horario').value;
+            const nombre = document.getElementById('cliente-nombre').value.trim();
+            const telefono = document.getElementById('cliente-telefono').value.trim();
+
+            if (!canchaId || !fecha || !hora || !nombre || !telefono) {
+                alert("Por favor completa todos los campos.");
+                return;
+            }
+
+            const cancha = canchas.find(c => c.id === canchaId);
+            const horaNum = parseInt(hora.split(':')[0]);
+            let precio = horaNum >= 18 ? cancha.tarifas.nocturno : cancha.tarifas.diurno;
+
+            const resId = 'res_' + Date.now();
+            const nuevaReserva = {
+                id: resId,
+                canchaId: cancha.id,
+                canchaNombre: cancha.nombre,
+                fecha: fecha,
+                hora: hora,
+                nombre: nombre,
+                telefono: telefono,
+                precio: precio,
+                estado: 'pendiente'
+            };
+
+            reservasRealizadas.push(nuevaReserva);
+            guardarEnLocalStorage();
+
+            enviarReservaAGoogleSheets(nuevaReserva);
+
+            const numWspAdmin = formatearTelefonoWhatsApp(configApp.whatsapp);
+            let mensaje = `Hola! Quisiera solicitar la reserva de la ${cancha.nombre} para el día ${fecha} a las ${hora} hs. Mi nombre es ${nombre}. Total: $${precio.toLocaleString('es-AR')}.`;
+            let urlWap = `https://wa.me/${numWspAdmin}?text=${encodeURIComponent(mensaje)}`;
+
+            window.open(urlWap, '_blank');
+
+            document.getElementById('cliente-nombre').value = '';
+            document.getElementById('cliente-telefono').value = '';
+            actualizarHorariosDisponibles();
+            alert("¡Solicitud registrada! Tu turno se guardó en la nube y se envió por WhatsApp.");
+        };
+
+        window.guardarUrlGoogleSheets = function() {
+            const url = document.getElementById('input-sheets-url').value.trim();
+            configApp.sheetsUrl = url;
+            guardarEnLocalStorage();
+            sincronizarConGoogleSheets();
+            alert("Enlace de Google Sheets guardado correctamente.");
+        };
+
+        window.filtrarReservasAdmin = function(estado) {
+            estadoFiltroAdmin = estado;
+            
+            const btnPend = document.getElementById('tab-reserva-pendiente');
+            const btnConf = document.getElementById('tab-reserva-confirmada');
+            const btnComp = document.getElementById('tab-reserva-completada');
+
+            btnPend.className = estado === 'pendiente' ? "px-4 py-2 font-bold bg-amber-500 text-slate-950 rounded-t-lg transition flex items-center gap-2" : "px-4 py-2 text-slate-300 hover:text-white rounded-t-lg transition flex items-center gap-2";
+            btnConf.className = estado === 'confirmada' ? "px-4 py-2 font-bold bg-emerald-500 text-slate-950 rounded-t-lg transition flex items-center gap-2" : "px-4 py-2 text-slate-300 hover:text-white rounded-t-lg transition flex items-center gap-2";
+            btnComp.className = estado === 'completada' ? "px-4 py-2 font-bold bg-blue-500 text-white rounded-t-lg transition flex items-center gap-2" : "px-4 py-2 text-slate-300 hover:text-white rounded-t-lg transition flex items-center gap-2";
+
+            renderizarListaReservasAdmin();
+        };
+
+        function renderizarListaReservasAdmin() {
+            const contenedor = document.getElementById('contenedor-reservas-admin');
+            if (!contenedor) return;
+            contenedor.innerHTML = '';
+
+            const pends = reservasRealizadas.filter(r => r.estado === 'pendiente');
+            const confs = reservasRealizadas.filter(r => r.estado === 'confirmada');
+            const comps = reservasRealizadas.filter(r => r.estado === 'completada');
+
+            document.getElementById('cnt-pendientes').textContent = pends.length;
+            document.getElementById('cnt-confirmadas').textContent = confs.length;
+            document.getElementById('cnt-completadas').textContent = comps.length;
+
+            const listaFiltrada = reservasRealizadas.filter(r => r.estado === estadoFiltroAdmin);
+
+            if (listaFiltrada.length === 0) {
+                contenedor.innerHTML = `<p class="text-sm text-slate-400 italic py-4 text-center">No hay reservas en estado '${estadoFiltroAdmin}'.</p>`;
+                return;
+            }
+
+            listaFiltrada.forEach(res => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
+
+                let acciones = '';
+                if (res.estado === 'pendiente') {
+                    acciones = `
+                        <button onclick="confirmarReservaWhatsApp('${res.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                            <i class="fab fa-whatsapp text-sm"></i> Confirmar
+                        </button>
+                        <button onclick="eliminarReserva('${res.id}')" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded-lg text-xs transition">
+                            Rechazar
+                        </button>
+                    `;
+                } else if (res.estado === 'confirmada') {
+                    acciones = `
+                        <button onclick="marcarCompletada('${res.id}')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                            🏁 Finalizar
+                        </button>
+                        <button onclick="eliminarReserva('${res.id}')" class="bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded-lg text-xs transition">
+                            Cancelar Turno
+                        </button>
+                    `;
+                } else {
+                    acciones = `
+                        <button onclick="eliminarReserva('${res.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg text-xs transition">
+                            Eliminar Histórico
+                        </button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-emerald-400 text-base">${res.canchaNombre}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300">${res.fecha} - ${res.hora} hs</span>
+                        </div>
+                        <p class="text-sm text-white font-medium mt-1">👤 ${res.nombre} — 📞 ${res.telefono}</p>
+                        <p class="text-xs text-slate-400">Monto: <strong class="text-emerald-400">$${(res.precio || 0).toLocaleString('es-AR')}</strong></p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+                        ${acciones}
+                    </div>
+                `;
+                contenedor.appendChild(card);
+            });
+        }
+
+        window.confirmarReservaWhatsApp = function(reservaId) {
+            const reserva = reservasRealizadas.find(r => r.id === reservaId);
+            if (!reserva) return;
+
+            reserva.estado = 'confirmada';
+            guardarEnLocalStorage();
+            actualizarEstadoEnGoogleSheets(reserva.id, 'confirmada');
+
+            // Formatear y validar el teléfono del cliente
+            let telCliente = reserva.telefono ? formatearTelefonoWhatsApp(reserva.telefono) : '';
+
+            let mensajeConfirmacion = `¡Hola ${reserva.nombre}! Te confirmamos que tu reserva para ${reserva.canchaNombre} el día ${reserva.fecha} a las ${reserva.hora} hs ha sido CONFIRMADA en ${configApp.nombre}. ¡Te esperamos!`;
+
+            if (telCliente) {
+                let urlWap = `https://wa.me/${telCliente}?text=${encodeURIComponent(mensajeConfirmacion)}`;
+                window.open(urlWap, '_blank');
+            } else {
+                alert("Reserva confirmada en el sistema, pero el cliente no ingresó un teléfono válido para enviarle WhatsApp.");
+            }
+            
+            filtrarReservasAdmin('confirmada');
+            actualizarHorariosDisponibles();
+        };
+
+        window.marcarCompletada = function(reservaId) {
+            const reserva = reservasRealizadas.find(r => r.id === reservaId);
+            if (reserva) {
+                reserva.estado = 'completada';
+                guardarEnLocalStorage();
+                actualizarEstadoEnGoogleSheets(reserva.id, 'completada');
+                filtrarReservasAdmin('completada');
+            }
+        };
+
+        window.eliminarReserva = function(reservaId) {
+            const reserva = reservasRealizadas.find(r => r.id === reservaId);
+            if (reserva) {
+                reserva.estado = 'cancelada';
+                actualizarEstadoEnGoogleSheets(reserva.id, 'cancelada');
+            }
+            reservasRealizadas = reservasRealizadas.filter(r => r.id !== reservaId);
+            guardarEnLocalStorage();
+            renderizarListaReservasAdmin();
+            actualizarHorariosDisponibles();
+        };
+
+        window.cargarPanelAdmin = function() {
+            document.getElementById('input-sheets-url').value = configApp.sheetsUrl || '';
+
+            const listaAdmin = document.getElementById('lista-canchas-admin');
+            if (!listaAdmin) return;
+            listaAdmin.innerHTML = '';
+
+            const selCanchaHorario = document.getElementById('select-admin-cancha-horario');
+            const selCanchaTarifa = document.getElementById('select-admin-cancha-tarifa');
+            selCanchaHorario.innerHTML = '';
+            selCanchaTarifa.innerHTML = '';
+
+            if (canchas.length === 0) {
+                listaAdmin.innerHTML = '<p class="text-xs text-slate-500 italic">No hay canchas registradas.</p>';
+            } else {
+                canchas.forEach(c => {
+                    let div = document.createElement('div');
+                    div.className = "flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 text-sm";
+                    div.innerHTML = `
+                        <div>
+                            <span class="font-medium text-white">${c.nombre}</span>
+                            <span class="text-xs text-slate-400 block">${c.deporte === 'padel' ? 'Pádel (90m)' : 'Fútbol 5 (60m)'}</span>
+                        </div>
+                        <button onclick="eliminarCancha('${c.id}')" class="bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white px-2.5 py-1 rounded-md text-xs transition">🗑️ Quitar</button>
+                    `;
+                    listaAdmin.appendChild(div);
+
+                    let opt1 = document.createElement('option');
+                    opt1.value = c.id;
+                    opt1.textContent = c.nombre;
+                    selCanchaHorario.appendChild(opt1);
+
+                    let opt2 = document.createElement('option');
+                    opt2.value = c.id;
+                    opt2.textContent = c.nombre;
+                    selCanchaTarifa.appendChild(opt2);
+                });
+            }
+
+            cargarHorariosCanchaAdmin();
+            cargarTarifasCanchaAdmin();
+            renderizarListaReservasAdmin();
+        };
+
+        window.cargarHorariosCanchaAdmin = function() {
+            const canchaId = document.getElementById('select-admin-cancha-horario').value;
+            const contDias = document.getElementById('contenedor-horarios-por-cancha');
+            contDias.innerHTML = '';
+
+            const cancha = canchas.find(c => c.id === canchaId);
+            if (!cancha) return;
+
+            Object.keys(cancha.horarios).forEach(diaKey => {
+                let d = cancha.horarios[diaKey];
+                let card = document.createElement('div');
+                card.className = "bg-slate-800 p-3 rounded-lg border border-slate-700 space-y-2";
+                card.innerHTML = `
+                    <span class="font-bold text-xs uppercase text-emerald-400">${d.nombre}</span>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Apertura</label>
+                            <input type="time" id="ini_cancha_${diaKey}" value="${d.inicio}" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Cierre</label>
+                            <input type="time" id="fin_cancha_${diaKey}" value="${d.fin}" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white">
+                        </div>
+                    </div>
+                `;
+                contDias.appendChild(card);
+            });
+        };
+
+        window.guardarHorariosCancha = function() {
+            const canchaId = document.getElementById('select-admin-cancha-horario').value;
+            const cancha = canchas.find(c => c.id === canchaId);
+            if (!cancha) return;
+
+            Object.keys(cancha.horarios).forEach(diaKey => {
+                let iniVal = document.getElementById(`ini_cancha_${diaKey}`).value;
+                let finVal = document.getElementById(`fin_cancha_${diaKey}`).value;
+                if (iniVal) cancha.horarios[diaKey].inicio = iniVal;
+                if (finVal) cancha.horarios[diaKey].fin = finVal;
+            });
+
+            guardarEnLocalStorage();
+            guardarConfiguracionEnNube();
+            actualizarHorariosDisponibles();
+            alert(`Horarios actualizados y guardados en la nube para ${cancha.nombre}.`);
+        };
+
+        window.cargarTarifasCanchaAdmin = function() {
+            const canchaId = document.getElementById('select-admin-cancha-tarifa').value;
+            const cancha = canchas.find(c => c.id === canchaId);
+            if (!cancha) return;
+
+            document.getElementById('tarifa-diurno').value = cancha.tarifas.diurno;
+            document.getElementById('tarifa-nocturno').value = cancha.tarifas.nocturno;
+        };
+
+        window.guardarTarifasCancha = function() {
+            const canchaId = document.getElementById('select-admin-cancha-tarifa').value;
+            const cancha = canchas.find(c => c.id === canchaId);
+            if (!cancha) return;
+
+            const d = parseFloat(document.getElementById('tarifa-diurno').value);
+            const n = parseFloat(document.getElementById('tarifa-nocturno').value);
+
+            if (!isNaN(d)) cancha.tarifas.diurno = d;
+            if (!isNaN(n)) cancha.tarifas.nocturno = n;
+
+            guardarEnLocalStorage();
+            guardarConfiguracionEnNube();
+            alert(`Nuevas tarifas guardadas permanentemente en la nube para ${cancha.nombre}.`);
+        };
+
+        window.agregarCancha = function() {
+            const nombreInput = document.getElementById('nueva-cancha-nombre');
+            const deporteSelect = document.getElementById('nueva-cancha-deporte');
+            
+            const nombre = nombreInput.value.trim();
+            const deporte = deporteSelect.value;
+
+            if (!nombre) {
+                alert("Ingresá un nombre para la cancha.");
+                return;
+            }
+
+            const nuevoId = 'cancha_' + Date.now();
+            const duracion = deporte === 'padel' ? 90 : 60;
+            const tarifasDefault = deporte === 'padel' ? { diurno: 16000, nocturno: 20000 } : { diurno: 25000, nocturno: 35000 };
+
+            const nuevaCanchaObj = { 
+                id: nuevoId, 
+                nombre, 
+                deporte, 
+                duracion,
+                tarifas: tarifasDefault,
+                horarios: {
+                    1: { nombre: 'Lunes', inicio: '08:00', fin: '00:00' },
+                    2: { nombre: 'Martes', inicio: '08:00', fin: '00:00' },
+                    3: { nombre: 'Miércoles', inicio: '08:00', fin: '00:00' },
+                    4: { nombre: 'Jueves', inicio: '08:00', fin: '00:00' },
+                    5: { nombre: 'Viernes', inicio: '08:00', fin: '18:00' },
+                    6: { nombre: 'Sábado', inicio: '18:00', fin: '00:00' },
+                    0: { nombre: 'Domingo', inicio: '08:00', fin: '00:00' }
+                }
+            };
+
+            canchas.push(nuevaCanchaObj);
+            guardarEnLocalStorage();
+            guardarConfiguracionEnNube();
+
+            nombreInput.value = '';
+            cargarPanelAdmin();
+            cargarCanchasSelect();
+        };
+
+        window.eliminarCancha = function(id) {
+            canchas = canchas.filter(c => c.id !== id);
+            guardarEnLocalStorage();
+            guardarConfiguracionEnNube();
+            cargarPanelAdmin();
+            cargarCanchasSelect();
+        };
+
+        window.guardarConfiguracionGeneral = function() {
+            const nombre = document.getElementById('admin-nombre-complejo').value;
+            const wsp = document.getElementById('admin-whatsapp').value;
+            const nuevaPassword = document.getElementById('admin-nueva-password').value;
+
+            if (nombre) configApp.nombre = nombre;
+            if (wsp) configApp.whatsapp = wsp;
+            if (nuevaPassword.trim() !== '') {
+                configApp.passwordAdmin = nuevaPassword.trim();
+                document.getElementById('admin-nueva-password').value = '';
+            }
+
+            guardarEnLocalStorage();
+            guardarConfiguracionEnNube();
+            actualizarInterfazConfig();
+            alert("Ajustes generales del complejo guardados en la nube.");
+        };
+
+        function actualizarInterfazConfig() {
+            document.getElementById('admin-nombre-complejo').value = configApp.nombre;
+            document.getElementById('admin-whatsapp').value = configApp.whatsapp;
+            document.getElementById('titulo-complejo').textContent = configApp.nombre;
+            document.getElementById('footer-complejo').textContent = `${configApp.nombre} — Sistema de Reservas Online`;
+        }
+
+        // Inicializador de fechas (Hoy como mínimo, 5 días como máximo)
+        function inicializarFechas() {
+            const inputFecha = document.getElementById('input-fecha');
+            if (!inputFecha) return;
+
+            const hoy = new Date();
+            const yyyy = hoy.getFullYear();
+            const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dd = String(hoy.getDate()).padStart(2, '0');
+            const hoyStr = `${yyyy}-${mm}-${dd}`;
+
+            // Calcular máximo 5 días en el futuro
+            const maxFecha = new Date();
+            maxFecha.setDate(hoy.getDate() + 5);
+            const maxYyyy = maxFecha.getFullYear();
+            const maxMm = String(maxFecha.getMonth() + 1).padStart(2, '0');
+            const maxDd = String(maxFecha.getDate()).padStart(2, '0');
+            const maxStr = `${maxYyyy}-${maxMm}-${maxDd}`;
+
+            inputFecha.min = hoyStr;
+            inputFecha.max = maxStr;
+            inputFecha.value = hoyStr;
+        }
+
+        // Inicialización
+        window.addEventListener('DOMContentLoaded', () => {
+            inicializarFechas();
+            cargarCanchasSelect();
+            actualizarInterfazConfig();
+            sincronizarConGoogleSheets();
+        });
+    </script>
+</body>
+</html>
